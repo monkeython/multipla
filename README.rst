@@ -6,7 +6,7 @@
     :target: https://coveralls.io/r/monkeython/pluggable_package?branch=master
     :alt: Test coverage
 
-.. image:: https://readthedocs.org/projects/pluggable_package/badge/?version=latest&style=default
+.. image:: https://readthedocs.org/projects/pluggable-package/badge/?version=latest&style=default
     :target: http://pluggable_package.readthedocs.org/en/latest/
     :alt: Documentation status
 
