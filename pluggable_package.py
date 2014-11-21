@@ -95,6 +95,7 @@ _SETUP = collections.defaultdict(dict)
 
 _DEFAULT = object()
 
+
 def _get(name, default=_DEFAULT, package=None):
     global _REGISTERED, _DEFAULT
     maketrans = getattr(string, 'maketrans', getattr(str, 'maketrans', None))
@@ -219,6 +220,7 @@ def setup(package, default=None, **kwargs):
     # Registering third parties plugins.
     entry_points = pkg_resources.iter_entry_points(package_name)
     _REGISTERED[package_name].update(e() for e in entry_points)
+
 
 def _teardown(package):
     global _SETUP
