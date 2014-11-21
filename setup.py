@@ -11,9 +11,9 @@ NAME = 'pluggable_package'
 PACKAGE = __import__(NAME)
 AUTHOR, EMAIL = PACKAGE.__author__.rsplit(' ', 1)
 
+DESCRIPTION = "A micro plugin framework."
 with open(os.path.join(WD, 'README.rst'), 'r') as README:
-    DESCRIPTION = README.readline().strip()
-    LONG_DESCRIPTION = '\n'.join((DESCRIPTION, README.read()))
+    LONG_DESCRIPTION = README.read()
 
 URL = 'https://github.com/monkeython/%s' % NAME
 
