@@ -78,4 +78,4 @@ has en extensive docstring documentation as well as code comments, you can
 read more browsing the source code or in the python interactive shell.
 
 .. _`Pythonhosted`: http://pythonhosted.org/pluggable_package
-.. _`Read the Docs`: http://pluggable_package.readthedocs.org
+.. _`Read the Docs`: http://pluggable-package.readthedocs.org
