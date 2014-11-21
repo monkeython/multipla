@@ -1,0 +1,16 @@
+language: python
+python:
+  - '2.7'
+  - '3.2'
+  - '3.3'
+  - '3.4'
+  - 'pypy'
+  - 'pypy3'
+install: pip install -r build_requirements.txt
+script:
+  - python setup.py sdist
+  - python setup.py bdist_wheel
+  - flake8 loremipsum
+  - coverage run setup.py test
+after_success:
+  - coveralls

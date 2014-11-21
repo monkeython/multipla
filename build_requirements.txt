@@ -1,0 +1,7 @@
+pep8==1.5.6
+flake8==2.1.0
+testrepository
+hacking
+wheel
+coverage==3.7.1
+python-coveralls

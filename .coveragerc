@@ -1,0 +1,10 @@
+[run]
+omit =
+    env?/*
+    /home/travis/virtualenv/*
+
+[html]
+directory = build/docs/html/coverage
+
+[report]
+show_missing = True
