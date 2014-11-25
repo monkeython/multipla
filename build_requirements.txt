@@ -5,3 +5,4 @@ hacking
 wheel
 coverage==3.7.1
 python-coveralls
+genty
