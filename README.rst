@@ -42,17 +42,19 @@
 ..     :target: https://pypi.python.org/pypi/pluggable_package/
 ..     :alt: Supported Python implementations
 
-The purpose of this module is to setup a package/sub-package/module for a dead
-simple plugin system. Is there a way to quickly setup your module for plugins?
-Is it also easy to use for you and third party developers? I don't know, but I
-know what I like: package and modules as namespaces or containers.  So, let me
-show you my idea.
+The purpose of this module is to setup a package/sub-package for a dead simple
+plugin system. Is there a way to quickly setup your package for plugins?  Is it
+also easy to use for you and third party developers? I don't know, but I know
+what I like: package and modules as namespaces or containers. So a
+``pluggable_package`` is namespace package which also is an entry point for
+plugins.
 
 I wanted something that let me write code like this:
 
 .. code-block:: python
 
-   from cereal import content_types
+   import pluggable_package
+   content_types = pluggable_package.import_package('cereal.content_types')
 
    def to_json(object):
        content_type = content_types.get('application/json')
@@ -69,8 +71,9 @@ or:
 .. code-block:: python
 
    from loremipsum import generator
-   from loremipsum import samples
+   import pluggable_package
 
+   samples = pluggable_package.import_package('loremipsum.samples')
    vaporware = generator.Generator(samples.get('vaporware'))
 
 You can read more on `Pythonhosted`_ or `Read the Docs`_. Since this package
