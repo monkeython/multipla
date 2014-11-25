@@ -8,3 +8,6 @@ directory = build/docs/html/coverage
 
 [report]
 show_missing = True
+exclude_lines =
+    pragma: no cover
+
