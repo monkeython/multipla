@@ -1,97 +1,84 @@
 import gc
 import importlib
+import os
 import unittest
+import sys
+import types
 
 import pluggable_package
 
+import genty
 
-class TestPluggablePackage(unittest.TestCase):
-    """Test the pluggable package."""
 
-    class PluggableObject(object):
-        pass
-
+class Common(unittest.TestCase):
     @classmethod
     def setUpClass(class_):
-        class_._test_package = importlib.import_module('tests.test_package')
-        class_._test_module = importlib.import_module('tests.test_package.test_module')
+        class_._package_name = 'tests.my_package'
+        class_._package = pluggable_package.import_package(class_._package_name)
+        class_._plugin = importlib.import_module('tests.my_package.plugin')
+        class_._third_party = importlib.import_module('tests.my_package.third_party')
 
     def setUp(self):
-        self._test_object = self.PluggableObject()
+        pluggable_package._plugins[self._package.__name__] = dict()
 
-    def tearDown(self):
-        del self._test_object
-        pluggable_package._teardown(self._test_package)
-        pluggable_package._teardown(self._test_module)
+    @classmethod
+    def tearDownClass(class_):
+        del class_._package, class_._package_name, class_._plugin
         gc.collect()
 
-    def _test_setup(self, pluggable, **kwargs):
-        DEFAULT_name = kwargs.get('DEFAULT', 'DEFAULT')
-        get_name = kwargs.get('get', 'get')
-        registered_name = kwargs.get('registered', 'registered')
-        set_default_name = kwargs.get('set_default', 'set_default')
 
-        DEFAULT = lambda: getattr(pluggable, DEFAULT_name)
-        get = getattr(pluggable, get_name)
-        registered = getattr(pluggable, registered_name)
-        set_default = getattr(pluggable, set_default_name)
+class TestFunctions(Common):
 
-        functions = {
-            get_name: get,
-            registered_name: registered,
-            set_default_name: set_default}
+    def test_import_package(self):
+        self.assertIs(self._package,
+                      pluggable_package.import_package(self._package_name))
+        self.assertIsInstance(self._package, types.ModuleType)
+        self.assertIsInstance(self._package, pluggable_package.PluggablePackage)
+        self.assertIsNot(self._package, sys.modules[self._package_name])
 
-        for name in functions:
-            self.assertIsNotNone(functions.get(name), None)
+dataset = (
+    ('test!exclamation', 'test_exclamation'),
+    ('test#number', 'test_number'),
+    ('test$dollar', 'test_dollar'),
+    ('test&ampersand', 'test_ampersand'),
+    ('test^circumflex', 'test_circumflex'),
+    ('test/slash', 'test_slash'),
+    ('test/slash-hyphen', 'test_slash_hyphen'),
+    ('test/slash.dot-hyphen+plus', 'test_slash_dot_hyphen_plus'))
 
-        self.assertIsNone(DEFAULT())
-        self.assertIsInstance(registered(), dict)
-        self.assertTrue(registered())
-        default = list(registered().keys())[0]
-        set_default(default)
-        self.assertIs(DEFAULT(), get(default))
-        self.assertIsNone(get('maybe', None))
-        with self.assertRaises(KeyError):
-            get('do_not_exists')
+@genty.genty
+class TestPluggablePackage(Common):
+    """Test the pluggable package."""
 
-    def test_setup_package(self):
-        """Test the setup on a package."""
-        pluggable_package.setup(self._test_package)
-        self._test_setup(self._test_package)
+    def test___str__(self):
+        pkg = self._package
+        msg = "<pluggable_package '{}' from '{}'>"
+        self.assertEqual(str(pkg), msg.format(pkg.__name__, pkg.__file__))
 
-    def test_setup_module(self):
-        """Test the setup on a module."""
-        pluggable_package.setup(self._test_module)
-        self._test_setup(self._test_module)
+    def test_get(self):
+        mediatype = 'application/vnd.mytype-v2+xml'
+        self.assertIsNone(self._package.get(mediatype, None))
+        with self.assertRaises(NotImplementedError):
+            self._package.get('application/vnd.mytype-v2+xml')
 
-    def test_setup_object_without__all__name__(self):
-        """Test the setup on a very bad object."""
-        with self.assertRaises(AttributeError):
-            pluggable_package.setup(self._test_object)
+    @genty.genty_dataset(*dataset)
+    def test_setdefault(self, name, translated):
+        setdefault = self._package.setdefault
+        get = self._package.get
+        plugin = 'tests.my_package.' + translated
+        plugin = importlib.import_module(plugin)
+        self.assertNotIn(translated, self._package.__all__)
+        self.assertIs(setdefault(translated, plugin), plugin)
+        self.assertIs(get(name), plugin)
+        self.assertIs(setdefault(translated, self._third_party), plugin)
+        self.assertIn(translated, self._package.__all__)
 
-    def test_setup_object_without__all__(self):
-        """Test the setup on an object without __all__ attribute."""
-        self._test_object.__name__ = 'pluggable_without__all__'
-        with self.assertRaises(AttributeError):
-            pluggable_package.setup(self._test_object)
-
-    def test_setup_object_with_empty__all__(self):
-        """Test the setup on an object with empty __all__ attribute."""
-        self._test_object.__name__ = 'pluggable_with_empty__all__'
-        self._test_object.ignored_plugin = object()
-        self._test_object.__all__ = []
-        pluggable_package.setup(self._test_object)
-        with self.assertRaises(AssertionError):
-            self._test_setup(self._test_object)
-
-    def test_setup_object(self):
-        """Test the setup on an object."""
-        self._test_object.__name__ = 'pluggable_object'
-        self._test_object.test_plugin = object()
-        self._test_object.__all__ = ['test_plugin']
-        pluggable_package.setup(self._test_object)
-        self._test_setup(self._test_object)
-
-    def test_name_remapping(self):
-        """Test name remapping."""
-
+#    @genty.genty_dataset(dataset)
+#    def test_attrs(self, name, translated):
+#        with self.assertRaises(AttributeError):
+#            getattr(self._package, translated)
+#        setattr(self._package, translated, plugin)
+#        self.assertIs(getattr(self._package, translated), plugin)
+#        delattr(self._package, translated)
+#        with self.assertRaises(AttributeError):
+#            getattr(self._package, translated)

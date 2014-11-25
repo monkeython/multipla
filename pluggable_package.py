@@ -1,65 +1,10 @@
 """
-By default, a package/module that has been setup for plugin
-management, will have the following attributes and functions available:
-
-* :py:attr:`package.DEFAULT`
-* :py:func:`package.get`
-* :py:func:`package.set_default`
-* :py:func:`package.registered`
-
-Unfortunately, it may happen to have these names already set with other
-objects. In that case, the :py:func:`setup` lets you personalise your internal
-APIs.
-
-.. py:data:: package.DEFAULT
-
-   The package default plugin. Initial value is :py:obj:`None`.
-
-.. py:function:: package.get(name, default=_DEFAULT)
-
-   :param str name:     The ``object`` name.
-   :param default:      The value to return if lookup fails.
-   :raises KeyError:    If lookup fails and no ``default`` value is provided.
-   :returns:            The plugged in ``object``.
-
-   Returns the desired plugged in ``object``.  On lookup, ``name`` value is
-   translated: ``/`` and ``-`` characters are converted to ``_``. So, the
-   following example should work as expected:
-
-   >>> import content_type_plugins
-   >>> plugin = content_type_plugins.get('application/octet-stream')
-
-   Also, note that even if ``default`` param has a default value itself, if it
-   is not passed on call, the function will raise :py:exc:`KeyError` on lookup
-   failure:
-
-   >>> try:
-   ...     plugin = plugins.get('doesn_t_exists')
-   ... except KeyError:
-   ...     plugin = False
-   ...
-   >>> plugin
-   False
-   >>> plugins.get('doesn_t_exists', None) is None
-   True
-
-.. py:function:: package.set_default(name)
-
-   :param str name:     The ``object`` name.
-
-   Lookup plugin named ``name`` and set it in ``package.DEFAULT``.
-
-.. py:function:: package.registered()
-
-   :returns:            Registered plugins dictionary
-   :rtype:              :py:class:`dict`
-
-   Returns a ``name: value`` dictionary of the registered ``object``s.
-   ``name`` is the actual registered name: see :py:func:`package.get` above.
+The purpose of this module is to mix the namespace packages with the
+:py:mod:`setuptools` plugins system.
 """
 
-__author__ = "Luca De Vitis <luca@monkeython.com>"
-__version__ = '0.0.1'
+__author__ = "Luca De Vitis <luca at monkeython.com>"
+__version__ = '0.0.2'
 __copyright__ = "2014, %s " % __author__
 __docformat__ = 'restructuredtext en'
 __keywords__ = ['plugs', 'pluggable', 'package', 'module']
@@ -79,151 +24,179 @@ __classifiers__ = [
     'Programming Language :: Python :: Implementation :: PyPy',
     'Topic :: Software Development :: Libraries :: Python Modules']
 
-__all__ = ['setup']
+__all__ = ['import_package']
 
 import collections
-import functools
 import importlib
+import os
 import string
+import types
 
 import pkg_resources
 
-# Plugin register
-_REGISTERED = collections.defaultdict(dict)
-
-_SETUP = collections.defaultdict(dict)
-
-_DEFAULT = object()
-
-
-def _get(name, default=_DEFAULT, package=None):
-    global _REGISTERED, _DEFAULT
-    maketrans = getattr(string, 'maketrans', getattr(str, 'maketrans', None))
-    name = name.translate(maketrans("/-", "__"))
+try:
+    thread = importlib.import_module('thread')
+except ImportError:     # pragma: no cover
     try:
-        return _REGISTERED[package.__name__][name]
-    except KeyError:
-        if default is not _DEFAULT:
-            return default
-        raise
+        thread = importlib.import_module('_thread')
+    except ImportError:
+        try:
+            thread = importlib.import_module('dummy_thread')
+        except ImportError:
+            thread = importlib.import_module('_dummy_thread')
 
 
-def _set_default(name, DEFAULT_name=None, package=None):
-    setattr(package, DEFAULT_name, _get(name, package=package))
+_packages = dict()
+_locked_packages = thread.allocate_lock()
+
+_plugins = collections.defaultdict(dict)
+_locked_plugins = thread.allocate_lock()
 
 
-def _registered(package=None):
-    global _REGISTERED
-    return _REGISTERED[package.__name__].copy()
+def import_package(name, package=None):
+    """Returns pluggable package.
 
-
-def setup(package, default=None, **kwargs):
-    """Set the package/module up for plugins management.
-
-    :param module package:  The package/module object to setup for plugins.
-    :param str default:     The identifier of the default plugin to set into
-                            ``DEFAULT`` data variable. See also
-                            :py:func:`package.get`.
-    :param kwargs:          A dictionary of function names, and default value
-                            remapping:
-
-                            get
-                                The name to use for the ``get`` function.
-                            set_default
-                                The name to use for the ``set_default``
-                                function.
-                            registered
-                                The name to use for the ``registered``
-                                function.
-                            DEFAULT
-                                The name to use for the ``DEFAULT`` data
-                                variable referencing the default plugin.
-
-    This function adds all the object listed in the package/module ``__all__``
-    variable. Names listed in ``__all__`` are converted removing trailinig
-    (right) ``_``: after all, you are not supposed to list objects whose name
-    starts with an ``_``. Also, it uses the
-    :py:func:`pkg_resources.iter_entry_points` to register all the third party
-    plugins. Objects returned by :py:func:`pkg_resources.iter_entry_points`
-    must be callables which return a ``(plugin_name, plugin_object)`` tuple.
+    :param str name:        See :py:func:`importlib.import_module`.
+    :param str package:     See :py:func:`importlib.import_module`.
+    :rtype:                 :py:class:`PluggablePackage`
 
     >>> import pluggable_package
     >>> import my_package
+    >>> import sys
+    >>> import types
     >>>
-    >>> my_package.__all__
-    ['example', 'type_']
-    >>> pluggable_package.setup(my_package)
+    >>> pluggable_package.import_package('my_package')
+    <pluggable_package 'my_package' from 'my_package/__init__.py'>
     >>>
-    >>> example = my_package.get('example')
-    >>> type_ = my_package.get('type')
-    >>> my_package.get('maybe', None) is None
+    >>> my_package = pluggable_package.import_package('my_package')
+    >>> my_package is pluggable_package.import_package('my_package')
     True
-
-    So, what if your package already exposes a ``DEFAULT`` variable, or any of
-    ``get``, ``set_default`` or ``registered`` function? You can rename any of
-    them like in the following example:
-
-    >>> import pluggable_package
-    >>> import my_package
-    >>>
-    >>> pluggable_package.setup(my_package, 'example',
-    ...                         get='get_plugin',
-    ...                         set_default='set_default_plugin',
-    ...                         registered='registered_plugins',
-    ...                         DEFAULT='DEFAULT_PLUGIN')
-    ...
-    >>> my_package.get_plugin('example') is my_package.DEFAULT_PLUGIN
+    >>> isinstance(my_package, types.ModuleType)
     True
-    >>>
-    >>> 'example' in my_package.registered_plugins()
+    >>> my_package is not sys.modules['my_package']
     True
     """
-
-    global _get, _set_default, _registered, _REGISTERED, _SETUP
-
-    # Getting / overriding default names.
-    DEFAULT_name = kwargs.get('DEFAULT', 'DEFAULT')
-    get_name = kwargs.get('get', 'get')
-    registered_name = kwargs.get('registered', 'registered')
-    set_default_name = kwargs.get('set_default', 'set_default')
-
-    partial = functools.partial
-
-    # Registering the setup, for later use in cleaning/testing
-    # :py:func:`_teardown`.
-    _SETUP[package][get_name] = partial(_get, package=package)
-    _SETUP[package][registered_name] = partial(_registered, package=package)
-    _SETUP[package][set_default_name] = partial(_set_default,
-                                                DEFAULT_name=DEFAULT_name,
-                                                package=package)
-    # Setting up the package.
-    setattr(package, get_name, _SETUP[package][get_name])
-    setattr(package, registered_name, _SETUP[package][registered_name])
-    setattr(package, set_default_name, _SETUP[package][set_default_name])
-
-    # Registering the bundled plugins.
-    package_name = package.__name__
-    for plugin_name in package.__all__:
+    global _packages, _locked_packages
+    pluggable = importlib.import_module(name, package)
+    with _locked_packages:
         try:
-            plugin_module = '.'.join([package_name, plugin_name])
-            plugin_object = importlib.import_module(plugin_module)
-        except ImportError:
-            plugin_object = getattr(package, plugin_name)
-
-        _REGISTERED[package_name][plugin_name.rstrip('_')] = plugin_object
-
-    # Setting up the default plugin.
-    default = default if default is None else _get(default, package=package)
-    _SETUP[package][DEFAULT_name] = default
-    setattr(package, DEFAULT_name, _SETUP[package][DEFAULT_name])
-
-    # Registering third parties plugins.
-    entry_points = pkg_resources.iter_entry_points(package_name)
-    _REGISTERED[package_name].update(e() for e in entry_points)
+            return _packages[pluggable]
+        except KeyError:
+            _packages[pluggable] = PluggablePackage(pluggable)
+            return _packages[pluggable]
 
 
-def _teardown(package):
-    global _SETUP
-    for attribute in _SETUP[package]:
-        delattr(package, attribute)
-    del _SETUP[package]
+# If it walks like a duck and quacks like a duck then it is a duck.
+class PluggablePackage(types.ModuleType):
+    """The PluggablePackage must be a package.
+
+    :param module package:  The package object.
+
+    This class mimic :py:class:`types.ModuleType`, but also imports and let you
+    access all the plugins associated with that package. It uses the
+    :py:func:`pkg_resources.iter_entry_points` to retrive all the third party
+    plugins. Each entry point must be a ``(plugin_name, plugin_object)`` tuple.
+    """
+
+    def __init__(self, package):
+        global _plugins, _locked_plugins
+        self.__name__ = package.__name__
+        self.__doc__ = getattr(package, '__doc__', None)
+        self.__package__ = getattr(package, '__package__',
+                                   self.__name__.split('.')[-1])
+        self.__file__ = package.__file__
+        self.__path__ = getattr(package, '__path__',
+                                os.path.dirname(self.__file__))
+        entry_points = pkg_resources.iter_entry_points(self.__name__)
+        with _locked_plugins:
+            _plugins[self.__name__] = dict(entry_points)
+
+    @property
+    def __all__(self):
+        global _plugins, _locked_plugins
+        with _locked_plugins:
+            return tuple(_plugins[self.__name__])
+
+    def get(self, name, default=NotImplemented):
+        """Get the desired plugin.
+
+        :param name:                    The plugin name.
+        :param default:                 The default value to return if lookup
+                                        fails.
+        :raises NotImplementedError:    If flookup fails and no default value
+                                        is explictly provided.
+        :returns:                       The desired plugin.
+
+        Lookup the desired plugin and returns it. On lookup, ``name`` value is
+        translated: ``!#$&^/+-.`` characters are converted to ``_``. So, the
+        following example should work as expected:
+
+        >>> import pluggable_package
+        >>> content_types = pluggable_package.import_package('content_types')
+        >>> plugin = content_types.get('application/octet-stream')
+
+        Note that even if ``default`` param has a declared default value, If
+        lookup fails and no ``default`` value was provided on call, the method
+        will raise :py:exc:`NotImplementedError`:
+
+        >>> mediatype = 'application/vnd.mytype-v2+xml'
+        >>> try:
+        ...     plugin = content_types.get(mediatype)
+        ... except NotImplementedError:
+        ...     plugin = False
+        ...
+        >>> plugin
+        False
+        >>> content_types.get(mediatype, None) is None
+        True
+        """
+        global _plugins, _locked_plugins
+        maketrans = getattr(str, 'maketrans', None)
+        maketrans = getattr(string, 'maketrans', maketrans)
+        translated = name.translate(maketrans('!#$&^/+-.', '_________'))
+
+        with _locked_plugins:
+            plugin = _plugins[self.__name__].get(translated, default)
+        if plugin is NotImplemented:
+            plugin = '{}.{}:{}'.format(self.__name__, translated, name)
+            raise NotImplementedError(plugin)
+        return plugin
+
+    def setdefault(self, name, value):
+        """Set a default plugin ``value``` for a given plugin ``name``.
+
+        :param str name:        The plugin actual (i.e. not translated) name.
+                                See also py:meth:`PluggablePackage.get`.
+        :param module value:    The plugin module.
+        :returns:               The plugged in module.
+
+        Set a default plugin with the same philosofy of
+        :py:meth:`dict.setdefault`. So, if plugin ``name`` has already been
+        set, it returns the already set value. If you want to override a plugin
+        ``name`` with your own ``value``, you must explicitly set the attribute
+        ``name`` of the :py:class:`PluggablePackage` instance:
+
+        >>> import importlib
+        >>> import pluggable_package
+        >>> my_module = importlib.import_module('my_module')
+        >>> third_party = importlib.import_module('third_party')
+        >>> my_package = pluggable_package.import_package('my_package')
+        >>>
+        >>> my_pacakge.setdefault('my_module', my_module) is my_module
+        True
+        >>> my_pacakge.setdefault('my_module', third_party) is not third_party
+        True
+        >>> my_pacakge.setdefault('my_module', third_party) is my_module
+        True
+        >>> my_pacakge.my_module is my_module
+        True
+        >>> my_package.my_module = third_party
+        >>> my_package.my_module is third_party
+        """
+        global _plugins, _locked_plugins
+        with _locked_plugins:
+            return _plugins[self.__name__].setdefault(name, value)
+
+    def __str__(self):
+        str_ = "<pluggable_package '{}' from '{}'>"
+        return str_.format(self.__name__, self.__file__)
