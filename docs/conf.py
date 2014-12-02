@@ -19,10 +19,11 @@
 
 import sys
 import os
+import importlib
 
-sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+# sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
-import pluggable_package
+module = importlib.import_module('multipla')
 
 # -- General configuration ---------------------------------------------------
 
@@ -50,10 +51,10 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 
 rst_epilog = """
-.. |author| replace:: %s
+.. |author| replace:: {}
 .. |contact| replace:: http://www.monkeython.com
-.. |copyright| replace:: %s
-""" % (pluggable_package.__author__, pluggable_package.__copyright__)
+.. |copyright| replace:: {}
+""".format(module.__author__, module.__copyright__)
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -62,14 +63,14 @@ rst_epilog = """
 master_doc = 'index'
 
 # General information about the project.
-copyright = pluggable_package.__copyright__
+copyright = module.__copyright__
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = pluggable_package.__version__
+version = module.__version__
 # The full version, including alpha/beta/rc tags.
 # release = '1.0.0'
 

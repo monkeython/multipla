@@ -19,7 +19,7 @@ Overview
 API
 ===
 
-.. automodule:: pluggable_package
+.. automodule:: multipla
    :members: 
 
 Indices and tables

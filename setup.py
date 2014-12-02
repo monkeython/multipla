@@ -7,7 +7,7 @@ import sys
 WD = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(1, WD)
 
-NAME = 'pluggable_package'
+NAME = 'multipla'
 PACKAGE = __import__(NAME)
 AUTHOR, EMAIL = PACKAGE.__author__.rsplit(' ', 1)
 
