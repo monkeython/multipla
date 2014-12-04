@@ -10,7 +10,7 @@ install: pip install -r build_requirements.txt
 script:
   - python setup.py sdist
   - python setup.py bdist_wheel
-  - flake8 pluggable_package.py
+  - flake8 multipla.py
   - coverage run setup.py test
 after_success:
   - coveralls
