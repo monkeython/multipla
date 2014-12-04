@@ -149,13 +149,13 @@ class RatedDict(object):
         with self.locked:
             unexpected = set(ratings.keys()) - set(self._dict.keys())
             if unexpected:
-                error ='{}.rate: unexpected keys {}'
+                error = '{}.rate: unexpected keys {}'
                 raise KeyError(error.format(self, unexpected))
             self._ratings.update(ratings)
             # Here we take advantage of the ordering of
             # :py:class:`collections.OrderedDict` and stability of
             # :py:func:`sorted`
-            by_rate = sorted(self._ratings.items(), key=lambda (k, v): -v)
+            by_rate = sorted(self._ratings.items(), key=lambda kv: -kv[1])
             self._ratings = collections.OrderedDict(by_rate)
 
     def top(self, amount=None):
