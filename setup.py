@@ -1,18 +1,14 @@
-"""
-python setup.py bdist_egg
-"""
 import os
 import sys
-
-WD = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(1, WD)
 
 NAME = 'multipla'
 PACKAGE = __import__(NAME)
 AUTHOR, EMAIL = PACKAGE.__author__.rsplit(' ', 1)
 
-DESCRIPTION = "A micro plugin framework."
-with open(os.path.join(WD, 'README.rst'), 'r') as README:
+with open('docs/index.rst', 'r') as INDEX:
+    DESCRIPTION = INDEX.readline()
+
+with open('README.rst', 'r') as README:
     LONG_DESCRIPTION = README.read()
 
 URL = 'https://github.com/monkeython/%s' % NAME
@@ -28,7 +24,8 @@ EGG = {
     'classifiers': PACKAGE.__classifiers__,
     'keywords': PACKAGE.__keywords__,
     'py_modules': [NAME],
-    'test_suite': 'tests.suite'
+    'tests_require': ['genty'],
+    'test_suite': 'test_{}'.format(NAME)
 }
 
 if __name__ == '__main__':
