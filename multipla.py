@@ -278,7 +278,7 @@ class Multipla(RatedDict):
         :param default:                 The default value to return if lookup
                                         fails.
         :returns:                       The highest rated plugin.
-        :raises ValueError:             As per :py:data:`RatedDict.highest_rated`
+        :raises ValueError:             See :py:data:`RatedDict.highest_rated`.
         """
         try:
             return self[name].highest_rated
