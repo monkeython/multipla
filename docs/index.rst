@@ -1,6 +1,5 @@
-************************
-A micro plugin framework
-************************
+lugin handling system
+*********************
 
 :version: |version|
 :author: |author|

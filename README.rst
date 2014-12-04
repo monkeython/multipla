@@ -1,60 +1,63 @@
-.. image:: https://travis-ci.org/monkeython/pluggable_package.svg?branch=master
-    :target: https://travis-ci.org/monkeython/pluggable_package
+
+.. image:: https://travis-ci.org/monkeython/multipla.svg?branch=master
+    :target: https://travis-ci.org/monkeython/multipla
     :alt: Build status
 
-.. image:: https://coveralls.io/repos/monkeython/pluggable_package/badge.png?branch=master
-    :target: https://coveralls.io/r/monkeython/pluggable_package?branch=master
+.. image:: https://coveralls.io/repos/monkeython/multipla/badge.png?branch=master
+    :target: https://coveralls.io/r/monkeython/multipla?branch=master
     :alt: Test coverage
 
-.. image:: https://readthedocs.org/projects/pluggable-package/badge/?version=latest&style=default
-    :target: http://pluggable_package.readthedocs.org/en/latest/
+.. image:: https://readthedocs.org/projects/multipla/badge/?version=latest&style=default
+    :target: http://multipla.readthedocs.org/en/latest/
     :alt: Documentation status
 
-.. image:: https://pypip.in/download/pluggable_package/badge.svg?period=month
-    :target: https://pypi.python.org/pypi/pluggable_package/
+.. image:: https://pypip.in/download/multipla/badge.svg?period=month
+    :target: https://pypi.python.org/pypi/multipla/
     :alt: Downloads
 
-.. image:: https://pypip.in/version/pluggable_package/badge.svg?text=pypi
-    :target: https://pypi.python.org/pypi/pluggable_package/
+.. image:: https://pypip.in/version/multipla/badge.svg?text=pypi
+    :target: https://pypi.python.org/pypi/multipla/
     :alt: Latest Version
 
-.. image:: https://pypip.in/status/pluggable_package/badge.svg
-    :target: https://pypi.python.org/pypi/pluggable_package/
+.. image:: https://pypip.in/status/multipla/badge.svg
+    :target: https://pypi.python.org/pypi/multipla/
     :alt: Development Status
 
-.. image:: https://pypip.in/py_versions/pluggable_package/badge.svg
-    :target: https://pypi.python.org/pypi/pluggable_package/
+.. image:: https://pypip.in/py_versions/multipla/badge.svg
+    :target: https://pypi.python.org/pypi/multipla/
     :alt: Supported Python versions
 
-.. image:: https://pypip.in/egg/pluggable_package/badge.svg
-    :target: https://pypi.python.org/pypi/pluggable_package/
+.. image:: https://pypip.in/egg/multipla/badge.svg
+    :target: https://pypi.python.org/pypi/multipla/
     :alt: Egg Status
 
-.. image:: https://pypip.in/wheel/pluggable_package/badge.svg
-    :target: https://pypi.python.org/pypi/pluggable_package/
+.. image:: https://pypip.in/wheel/multipla/badge.svg
+    :target: https://pypi.python.org/pypi/multipla/
     :alt: Wheel Status
 
-.. .. image:: https://pypip.in/license/pluggable_package/badge.svg
-..     :target: https://pypi.python.org/pypi/pluggable_package/
+.. .. image:: https://pypip.in/license/multipla/badge.svg
+..     :target: https://pypi.python.org/pypi/multipla/
 ..     :alt: License
 .. 
-.. .. image:: https://pypip.in/implementation/pluggable_package/badge.svg
-..     :target: https://pypi.python.org/pypi/pluggable_package/
+.. .. image:: https://pypip.in/implementation/multipla/badge.svg
+..     :target: https://pypi.python.org/pypi/multipla/
 ..     :alt: Supported Python implementations
 
-The purpose of this module is to setup a package/sub-package for a dead simple
-plugin system. Is there a way to quickly setup your package for plugins?  Is it
-also easy to use for you and third party developers? I don't know, but I know
-what I like: package and modules as namespaces or containers. So a
-``pluggable_package`` is namespace package which also is an entry point for
-plugins.
+    (Spelled like multiplug)
+The purpose of this module is to provide a dead simple plugin handling system.
+I wanted a system:
 
-I wanted something that let me write code like this:
+# Capable of handling multiple plugins 
+# Multiple implementation of the same plugin
+# Easy to initialize in your pluggable application/framework.
+
+Is there a way to quickly setup your package for plugins?  Is it also easy to
+use for you and third party developers? I don't know, but I know what I like:
 
 .. code-block:: python
 
-   import pluggable_package
-   content_types = pluggable_package.import_package('cereal.content_types')
+   import multipla
+   content_types = multipla.power_up('scriba.content_types')
 
    def to_json(object):
        content_type = content_types.get('application/json')
@@ -71,14 +74,14 @@ or:
 .. code-block:: python
 
    from loremipsum import generator
-   import pluggable_package
+   import multipla
 
-   samples = pluggable_package.import_package('loremipsum.samples')
+   samples = multipla.power_up('loremipsum.samples')
    vaporware = generator.Generator(samples.get('vaporware'))
 
 You can read more on `Pythonhosted`_ or `Read the Docs`_. Since this package
 has en extensive docstring documentation as well as code comments, you can
 read more browsing the source code or in the python interactive shell.
 
-.. _`Pythonhosted`: http://pythonhosted.org/pluggable_package
-.. _`Read the Docs`: http://pluggable-package.readthedocs.org
+.. _`Pythonhosted`: http://pythonhosted.org/multipla
+.. _`Read the Docs`: http://multipla.readthedocs.org
