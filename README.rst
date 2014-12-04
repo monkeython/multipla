@@ -47,9 +47,9 @@
 The purpose of this module is to provide a dead simple plugin handling system.
 I wanted a system:
 
-# Capable of handling multiple plugins 
-# Multiple implementation of the same plugin
-# Easy to initialize in your pluggable application/framework.
+#. Capable of handling multiple plugins 
+#. Multiple implementation of the same plugin
+#. Easy to initialize in your pluggable application/framework.
 
 Is there a way to quickly setup your package for plugins?  Is it also easy to
 use for you and third party developers? I don't know, but I know what I like:
