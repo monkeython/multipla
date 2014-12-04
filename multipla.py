@@ -22,14 +22,10 @@ __classifiers__ = [
     'Programming Language :: Python :: Implementation :: PyPy',
     'Topic :: Software Development :: Libraries :: Python Modules']
 
-__all__ = ['switch_on', 'switch_off']
+__all__ = ['power_up']
 
 import collections
 import importlib
-import os
-import string
-import types
-import warnings
 
 import pkg_resources
 
@@ -45,77 +41,61 @@ except ImportError:     # pragma: no cover
             thread = importlib.import_module('_dummy_thread')
 
 
-# Grown man rule apply here on.
-_multipla = collections.defaultdict(dict)
-_locked_multipla = thread.allocate_lock()
+class Lock(object):
+    def __init__(self):
+        self.__lock = thread.allocate_lock()
 
-def switch_on(label, working_set=None):
-    """Create and/or returns a dictionary of plugins.
+    def __nonzero__(self):
+        return self.__lock.locked()
 
-    :param str label:       The multi-plug label (i.e. entry point group)
-    :rtype:                 :py:class:`Multipla`
+    def __enter__(self):
+        self.__lock.acquire()
 
-    >>> import multipla
-    >>>
-    >>> multipla.switch_on('plugin_group')
-    <Multipla 'plugin_group'>
-    >>>
-    >>> plugin_group = multipla.switch_on('plugin_group')
-    >>> plugin_group is multipla.switch_on('plugin_group')
-    True
-    >>> isinstance(plugin_group, multipla.Multipla)
-    True
-    """
-    if working_set is None:
-        working_set = pkg_resources.working_set
-    with _locked_multipla:
-        try:
-            return _multipla[working_set][label]
-        except KeyError:
-            _multipla[working_set][label] = Multipla(label, working_set)
-            return _multipla[working_set][label]
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__lock.release()
 
-def switch_off(label, working_set=None):
-    if working_set is None:
-        working_set = pkg_resources.working_set
-    with _locked_multipla:
-        multipla = _multipla[working_set]
-        try:
-            del multipla[label]
-        except KeyError:
-            return None
 
 class RatedDict(object):
     """A :py:class:`dict`-like class that lets you to rate its objects.
 
-    Implementation is meant to be thread-safe. Supports the following
-    :py:class:`dict`-like methods:
+    This implementation is meant to be thread-safe. Actually, it only supports
+    the following :py:class:`dict`-like methods:
 
-    * ``__setitem__``, ``__getitem__``, ``__delitem__``
-    * ``__iter__``, ``__reversed__``
-    * ``__contains__``, ``__len__``, ``__str__``
-    * ``update``, ``setdefault``
+    * ``__setitem__``
+    * ``__getitem__``
+    * ``__str__``
     """
     def __init__(self):
         self._ratings = collections.OrderedDict()
         self._dict = dict()
-        self._locked = thread.allocate_lock()
+        self.locked = Lock()
+
+    def __str__(self):
+        try:
+            name = self.name
+        except AttributeError:
+            name = id(self)
+        return "<{} '{}'>".format(self.__class__.__name__, name)
 
     def _setitem_(self, key, value):
         self._dict[key] = value
         self._ratings.setdefault(key, 0)
+        return value
 
     def __setitem__(self, key, value):
-        with self._locked:
+        with self.locked:
             self._setitem_(key, value)
 
-    def __delitem__(self, key):
-        with self._locked:
-            del self._dict[key]
-            del self._ratings[key]
-    
     def __getitem__(self, key):
         return self._dict[key]
+
+    def __delitem__(self, key):
+        with self.locked:
+            del self._dict[key]
+            del self._ratings[key]
+
+    def __contains__(self, key):
+        return self._dict.__contains__(key)
 
     def __iter__(self):
         return self._ratings.__iter__()
@@ -123,220 +103,174 @@ class RatedDict(object):
     def __reversed__(self):
         return self._ratings.__reversed__()
 
-    def __contains__(self, key):
-        return key in self._dict
-
     def __len__(self):
         return self._dict.__len__()
 
-    def __str__(self):
-        try:
-            label = self.label
-        except AttributeError:
-            label = id(self)
-        return "<{} '{}'>".format(self.__class__.__name__, label)
-
-    def update(self, other=None, **updated):
-        with self._locked:
-            if other is not None:
+    def update(self, other=(), **updated):
+        with self.locked:
+            try:
+                for key, value in other.items():
+                    self._setitem_(key, value)
+            except AttributeError:
                 try:
-                    for key, value in other.iteritems():
-                        self._setitem_(key, value)
+                    for key in other.keys():
+                        self._setitem_(key, other[key])
                 except AttributeError:
-                    try:
-                        for key in other.keys():
-                            self._setitem_(key, other[key])
-                    except AttributeError:
-                        for key, value in other:
-                            self._setitem_(key, value)
+                    for key, value in other:
+                        self._setitem_(key, value)
             for key in updated:
                 self._setitem_(key, updated[key])
 
-    def setdefault(self, key, value):
-        try:
-            default = self._dict[key]
-        except KeyError:
-            self[key] = default = value
-        return default
+#     def setdefault(self, key, value):
+#         with self.locked:
+#             try:
+#                 default = self._dict[key]
+#             except KeyError:
+#                 default = self._setitem_(key, value)
+#         return default
 
-    def rate(self, ratings=(), **args):
+    def rate(self, updates=(), **args):
         """Rate the items into the dictionary.
-        
-        :param rating:                  If ``rating`` has an ``iteritems`` or
-                                        ``keys`` methods, they will be used to
-                                        update the items ratings. Else,
-                                        ``ratings`` is considered a
-                                        :py:class:`tuple` of ``key``-``rating``
-                                        pairs.
+
+        :param updates:                 A ``key: rating`` dictionary or an
+                                        iterable yielding ``(key, rating)``.
         :param dict args:               Anyway, variable keyword arguments
                                         ``args`` will be used to update the
                                         item ratings.
+        :raises KeyError:               If unexpected keys are found.
 
         This method behave like the :py:meth:`dict.update`, but affects only
         items ratings. At the end of the update, dictionary keys are sorted by
         rating, from greater to lower rating value. Rating is supposed to be
         any kind of number equal or greater than 0. Default item rating is 0.
         """
-        with self._locked:
-            self._ratings.update(ratings, **args)
-            ratings, key = self._ratings.items(), lambda k, v: -v
-            self._ratings = collections.OrderedDict(sorted(ratings, key=key))
+
+        ratings = dict(updates, **args)
+        with self.locked:
+            unexpected = set(ratings.keys()) - set(self._dict.keys())
+            if unexpected:
+                error ='{}.rate: unexpected keys {}'
+                raise KeyError(error.format(self, unexpected))
+            self._ratings.update(ratings)
+            # Here we take advantage of the ordering of
+            # :py:class:`collections.OrderedDict` and stability of
+            # :py:func:`sorted`
+            by_rate = sorted(self._ratings.items(), key=lambda (k, v): -v)
+            self._ratings = collections.OrderedDict(by_rate)
 
     def top(self, amount=None):
-        """Returns the ``top`` rated items.
+        """Returns the top rated items.
 
-        :param int top:                 The number of items to return, sorted by
-                                        ratings. Defaults to all items.
-        :rtype:                         list
-                                        item is returned.
+        :param int amount:              The number of items to return. Defaults
+                                        to all items.
+        :returns:                       A list of ``key``-``value`` pairs,
+                                        sorted by key ratings.
         :raises ValueError:             If ``amount`` is greater than the
                                         available items.
         """
-        with self._locked:
+        top_rated = list()
+        with self.locked:
             if amount is None:
                 amount = len(self._ratings)
             item = iter(self._ratings)
             try:
                 for counter in range(amount):
                     key = next(item)
-                    top.append((key, self._dict[key]))
+                    top_rated.append((key, self._dict[key]))
             except StopIteration:
-                error = '{}.top: asked {} plugs, got {}'
+                error = '{}.top: asked {} items, got {}'
                 raise ValueError(error.format(self, amount, counter))
-            return top
+        return top_rated
 
     @property
     def highest_rated(self):
-        return self.top(1)[0]
+        """The value of the highest rated item.
+
+        :raises ValueError:             If container is empty.
+        """
+        with self.locked:
+            try:
+                return self._dict[self._ratings.__iter__().next()]
+            except StopIteration:
+                error = '{}.highest_rated: empty container'
+                raise ValueError(error.format(self))
 
 
 class MultiPlugAdapter(RatedDict):
-    """The multi-plug adapter that holds all the implementations
+    """The multi-plug adapter that holds the implementations.
 
-    :param label:                       The label of the plug adapter (i.e. the
+    :param name:                        The name of the plug adapter (i.e. the
                                         name of the entry point).
 
     This class represents all the plugins that implement the give entry point
     name. Since this class inherit from :py:class:`RatedDict`, it's possible to
-    rate each implementation. The ``pkg_resources`` classes allows multiple
-    packages/modules to provide their own implementation of a given plugin
-    name: for example, 2 modules might provide the same ``YAML`` serialization
+    rate each implementation. The ``pkg_resources`` classes allows each
+    distribution to provide their own implementation of a given plugin name:
+    for example, 2 distributions might provide the same ``YAML`` serialization
     functions, but each using a different ``YAML`` library.
     """
-    def __init__(self, label):
-        self.label = label
+    def __init__(self, name):
+        self.name = name
         super(MultiPlugAdapter, self).__init__()
 
-    def get(self, plug_model, default=None):
-        """Get a plugin or the supplied ``default`` value.
-        
-        :param str plug_model:          The ``plug`` implementation name.
-        :param default:                 The default value to return if lookup
-                                        fails.
-        :returns:                       The desired plugged in object.
-        """
-        try:
-            return self._dict[plug_model]
-        except KeyError:
-            return default
-
-    def plug_in(self, plug_model, plug):
+    def plug_in(self, name, plug):
         """Try to plug an object in.
-        
-        :param str plug_model:          The ``plug`` implementation name.
+
+        :param str name:                The ``plug`` implementation name.
         :param plug:                    The object to plug in.
         :raises KeyError:               If another object with the same
-                                        ``plug_model`` is already plugghed in.
+                                        ``name`` is already plugghed in.
 
-        If you want to override a specific plug implementation, you should use
+        If you want to explicitly overrid a plug implementation, you must use
         dictionary item setting syntax.
         """
-        try:
-            plugged = self[plug_model]
-        except KeyError:
-            self[plug_model] = plug
-            return plug
-        else:
-            raise KeyError(plug_model)
-
-    def plug_out(self, plug_model):
-        """Plugs an object out.
-
-        :param str plug_model:          The ``plug`` implementation name.
-
-        If ``plug_model`` does not exists, nothing is done.  If you want an
-        exception to be raised if the specific ``plug_model`` implementation is
-        not set, you should use dictionary item deletion syntax.
-        """
-        try:
-            del self[plug_model]
-        except KeyError:
-            return None
+        with self.locked:
+            try:
+                value = self._dict[name]
+            except KeyError:
+                return self._setitem_(name, plug)
+        error = '{}.plug_in: {} is already set with {}'
+        raise KeyError(error.format(self, name, value))
 
 
 class Multipla(RatedDict):
     """The power strip to put the plugs into.
-    
-    :param label:                       The label of the power strip (i.e. the
+
+    :param name:                        The name of the power strip (i.e. the
                                         entry point group).
 
     This class represents the plugin group. Since this class inherit from
-    :py:class:`RatedDict`, it's possible to rate each plugin.
+    :py:class:`RatedDict`, it's possible to rate each plugin. For example, you
+    could rate a set of content type handler.
     """
 
-    def __init__(self, label, working_set=None):
-        self.label = label
+    def __init__(self, name):
+        self.name = name
         super(Multipla, self).__init__()
-        ratings = collections.defaultdict(list)
-        for ep in working_set.iter_entry_points(label):
-            self.switch_on(ep.name).plug_in('.'.join(ep.attrs), ep.load())
 
-    def switch_on(self, socket_label):
-        """Switch on a socket labeled ``socket_label``.
+    def __call__(self, distribution):   # pragma: no cover
+        for ep in distribution.get_entry_map(self.name).values():
+            implementation = ':'.join([ep.module_name, '.'.join(ep.attrs)])
+            self.switch_on(ep.name).plug_in(implementation, ep.load())
 
-        :param str socket_label:        The socket label.
+    def switch_on(self, name):
+        """Switch on a socket.
+
+        :param str name:                The socket (entry point group) name.
         :returns:                       The :py:class:`MultiPlugAdapter`
-                                        associated with the ``socket_label``.
+                                        associated with the ``name``.
 
-        If the :py:class:`MultiPlugAdapter` already exists, it is returned.
-        If there is no :py:class:`MultiPlugAdapter` for the specified plugin
-        set, a new one is created and returned.
+        If the specified :py:class:`MultiPlugAdapter` already exists, it is
+        returned.  If there is no :py:class:`MultiPlugAdapter` for the
+        specified plugin group, a new one is created and returned.
         """
-        try:
-            adapter = self[socket_label]
-        except KeyError:
-            self[socket_label] = adapter = MultiPlugAdapter(socket_label)
+        with self.locked:
+            try:
+                adapter = self._dict[name]
+            except KeyError:
+                adapter = self._setitem_(name, MultiPlugAdapter(name))
         return adapter
 
-    def switch_off(self, socket_label):
-        """Switch off a socket labeled ``socket_label``.
-
-        :param str socket_label:        The socket label.
-
-        The effect of this method is to delete the specified
-        :py:class:`MultiPlugAdapter`. If specified plugin set does not exists,
-        nothing is done.
-        """
-        try:
-            del self[socket_label]
-        except KeyError:
-            return None
-
-    def plugs(self, name):
-        """Return all the available implementation for ``name``.
-
-        :param str name:                The plugin name.
-        :rtype:                         :py:class:`MultiPlugAdapter`
-        :raises KeyError:               If no ``MultiPlugAdapter`` was switched
-                                        on for ``name``..
-
-        See :py:meth:`Multipla.get` for ``name`` value.
-        """
-        maketrans = getattr(str, 'maketrans', None)
-        maketrans = getattr(string, 'maketrans', maketrans)
-        socket_label = name.translate(maketrans('!#$&^/+-.', '_________'))
-        return self._dict[socket_label]
-        
     def get(self, name, default=None):
         """Get the higest rated ``plug`` for the given plug ``name``.
 
@@ -344,16 +278,51 @@ class Multipla(RatedDict):
         :param default:                 The default value to return if lookup
                                         fails.
         :returns:                       The highest rated plugin.
-
-        Lookup the desired plugin and returns it. On lookup, ``name`` value is
-        translated into a label: ``!#$&^/+-.`` characters are converted to
-        ``_``. So, the following example should work as expected:
-
-        >>> import multipla
-        >>> content_types = multipla.switch_on('content_types')
-        >>> plugin = content_types.get('application/octet-stream')
+        :raises ValueError:             As per :py:data:`RatedDict.highest_rated`
         """
         try:
-            return self.plugs(name).highest_rated(1)[1]
+            return self[name].highest_rated
         except KeyError:
             return default
+
+
+_register = dict()
+_locked_register = Lock()
+
+
+def power_up(name, *args):
+    """Creates and returns a rated dictionary of plugins.
+
+    :param str name:                    The multi-plug name (i.e. entry point
+                                        group).
+    :param args:                        Variable argument list of
+                                        :py:class:`pkg_resources.WorkingSet`.
+    :rtype:                             :py:class:`Multipla`
+
+    :py:class:`Multipla` instance meant to be unique, is powered up by
+    subscribing (as per :py:meth:`pkg_resources.WorkingSet.subscribe`) it to
+    each :py:class:`pkg_resources.WorkingSet` in the variable argument list. If
+    no extra argument is provided, :py:data:`pkg_resources.working_set` is
+    used.
+
+    >>> import multipla
+    >>>
+    >>> multipla.power_up('plugin_group')
+    <Multipla 'plugin_group'>
+    >>>
+    >>> plugin_group = multipla.power_up('plugin_group')
+    >>> plugin_group is multipla.power_up('plugin_group')
+    True
+    >>> isinstance(plugin_group, multipla.Multipla)
+    True
+    """
+    with _locked_register:
+        try:
+            multipla = _register[name]
+        except KeyError:
+            _register[name] = multipla = Multipla(name)
+    if not args:
+        args = [pkg_resources.working_set]
+    for working_set in args:
+        working_set.subscribe(multipla)
+    return multipla
