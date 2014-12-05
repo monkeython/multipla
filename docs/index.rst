@@ -6,8 +6,6 @@ Plugin handling system
 :contact: |contact|
 :copyright: |copyright|
 
-.. include:: ../LICENSE.rst
-
 Overview
 ========
 
@@ -15,10 +13,22 @@ Overview
 
 .. include:: ../CHANGES.rst
 
-API
-===
+Basic Usage
+===========
 
 .. automodule:: multipla
+   :members: 
+
+Advanced Usage
+==============
+
+.. autoclass:: multipla.Multipla
+   :members:
+
+.. autoclass:: multipla.MultiPlugAdapter
+   :members: 
+
+.. autoclass:: multipla.RatedDict
    :members: 
 
 Indices and tables
