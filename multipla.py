@@ -29,7 +29,7 @@
 #     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 __author__ = "Luca De Vitis <luca at monkeython.com>"
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __keywords__ = ['multipla', 'multi-plugs', 'multi-socket', 'plugs', 'plugin']
 __classifiers__ = [
     'Development Status :: 5 - Production/Stable',
@@ -293,7 +293,7 @@ class Multipla(RatedDict):
     def switch_on(self, name):
         """Switch on a socket.
 
-        :param str name:                The socket (entry point group) name.
+        :param str name:                The socket (entry point) name.
         :returns:                       The :py:class:`MultiPlugAdapter`
                                         associated with the ``name``.
 
