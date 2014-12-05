@@ -14,3 +14,11 @@ script:
   - coverage run test_multipla.py -v
 after_success:
   - coveralls
+deploy:
+  provider: pypi
+  user: monkeython
+  password:
+    secure: el+nlWhEjos4ofYJJf+FrU4H9o28bzLzsu3wW+xx8mPZHE/vY33WEniLSqI7wION+KlRXCVASa1XF25rKFp2TIybB8FlpyUZdz2gprUbX9tGy6uxjLnWS9BnkSqu3EfQRfN0p9pCwGXhJPNXYI9A8kZnaxKtNhZnkLnxjrSUaV8=
+  on:
+    tags: true
+    repo: monkeython/multipla
