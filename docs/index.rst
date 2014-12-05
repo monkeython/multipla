@@ -1,5 +1,5 @@
-lugin handling system
-*********************
+Plugin handling system
+**********************
 
 :version: |version|
 :author: |author|
