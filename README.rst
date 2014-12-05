@@ -43,7 +43,8 @@
 ..     :target: https://pypi.python.org/pypi/multipla/
 ..     :alt: Supported Python implementations
 
-    (Spelled like multiplug)
+   (Spelled like multiplug)
+
 The purpose of this module is to provide a dead simple plugin handling system.
 I wanted a system:
 

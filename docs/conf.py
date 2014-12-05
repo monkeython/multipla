@@ -50,20 +50,21 @@ templates_path = ['_templates']
 # The suffix of source filenames.
 source_suffix = '.rst'
 
+with open('../LICENSE.rst', 'r') as LICENSE:
+    copyright = LICENSE.readline()
+    author = copyright.rsplit(', ', 1)[1]
+
 rst_epilog = """
 .. |author| replace:: {}
 .. |contact| replace:: http://www.monkeython.com
 .. |copyright| replace:: {}
-""".format(module.__author__, module.__copyright__)
+""".format(author, copyright)
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
 # The master toctree document.
 master_doc = 'index'
-
-# General information about the project.
-copyright = module.__copyright__
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
