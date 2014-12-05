@@ -107,8 +107,7 @@ class TestRatedDict(unittest.TestCase):
         self.assertEqual(self.rd.highest_rated, 1)
 
     def test_ratings(self):
-        with self.assertRaises(StopIteration):
-            next(self.rd.ratings)
+        self.assertFalse(self.rd.ratings)
         self.rd.update(a=1, b=2)
         self.rd.rate(b=4, a=1)
         self.assertEqual(list(self.rd.ratings), [('b', 4), ('a', 1)])

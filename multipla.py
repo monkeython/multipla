@@ -29,15 +29,13 @@
 #     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 __author__ = "Luca De Vitis <luca at monkeython.com>"
-__version__ = '0.0.4'
+__version__ = '0.1.0'
 __keywords__ = ['multipla', 'multi-plugs', 'multi-socket', 'plugs', 'plugin']
-# 'Development Status :: 5 - Production/Stable',
 __classifiers__ = [
-    'Development Status :: 4 - Beta',
+    'Development Status :: 5 - Production/Stable',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: BSD License',
     'Operating System :: OS Independent',
-    'Programming Language :: Python :: 2.6',
     'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3.2',
     'Programming Language :: Python :: 3.3',
@@ -226,11 +224,8 @@ class RatedDict(object):
 
     @property
     def ratings(self):
-        """``key``-``rate`` pairs for each ``key``, sorted by ``rate``.
-
-        :rtype:                         iterator
-        """
-        return iter(self._ratings.items())
+        """Iterator over ``key``-``rate`` pairs, sorted by ``rate``."""
+        return tuple(self._ratings.items())
 
 
 class MultiPlugAdapter(RatedDict):

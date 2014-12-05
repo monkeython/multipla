@@ -6,6 +6,9 @@ Plugin handling system
 :contact: |contact|
 :copyright: |copyright|
 
+.. include:: ../LICENSE.rst
+   :start-line: 1
+
 Overview
 ========
 

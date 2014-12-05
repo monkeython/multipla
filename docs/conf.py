@@ -51,7 +51,7 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 
 with open('../LICENSE.rst', 'r') as LICENSE:
-    copyright = LICENSE.readline()
+    copyright = LICENSE.readline()[3:]
     author = copyright.rsplit(', ', 1)[1]
 
 rst_epilog = """

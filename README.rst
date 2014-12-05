@@ -15,7 +15,7 @@
     :target: https://pypi.python.org/pypi/multipla/
     :alt: Downloads
 
-.. image:: https://pypip.in/version/multipla/badge.svg?text=pypi
+.. image:: https://pypip.in/version/multipla/badge.svg?text=latest
     :target: https://pypi.python.org/pypi/multipla/
     :alt: Latest Version
 
@@ -26,6 +26,10 @@
 .. image:: https://pypip.in/py_versions/multipla/badge.svg
     :target: https://pypi.python.org/pypi/multipla/
     :alt: Supported Python versions
+
+.. image:: https://pypip.in/implementation/multipla/badge.svg
+    :target: https://pypi.python.org/pypi/multipla/
+    :alt: Supported Python implementations
 
 .. image:: https://pypip.in/egg/multipla/badge.svg
     :target: https://pypi.python.org/pypi/multipla/
@@ -39,25 +43,19 @@
 ..     :target: https://pypi.python.org/pypi/multipla/
 ..     :alt: License
 .. 
-.. .. image:: https://pypip.in/implementation/multipla/badge.svg
-..     :target: https://pypi.python.org/pypi/multipla/
-..     :alt: Supported Python implementations
 
-   (Spelled like multiplug)
+(Spelled like multiplug) The purpose of this module is to provide a dead simple
+plugin handler module. I wanted something:
 
-The purpose of this module is to provide a dead simple plugin handling system.
-I wanted a system:
-
-#. Capable of handling multiple plugins 
-#. Multiple implementation of the same plugin
+#. Capable of handling multiple plugins (and that's pretty obvious)
+#. Capable of handling multiple implementation of the same plugin
+#. Capable of handling multiple ``pkg_resources.WorkingSet``-s... by itself
 #. Easy to initialize in your pluggable application/framework.
 
-Is there a way to quickly setup your package for plugins?  Is it also easy to
-use for you and third party developers? I don't know, but I know what I like:
+I wanted somthing like:
 
 .. code-block:: python
 
-   import multipla
    content_types = multipla.power_up('scriba.content_types')
 
    def to_json(object):

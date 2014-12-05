@@ -1,5 +1,8 @@
 Changes
 =======
+
+0.1.0
+   * Added ``RatedDict.ratings`` method to read item ratings values.
 0.0.4
    * API refactoring.
 0.0.2
