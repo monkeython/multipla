@@ -88,9 +88,11 @@ class RatedDict(object):
     This implementation is meant to be thread-safe. Actually, it only supports
     the following :py:class:`dict`-like methods:
 
-    * ``__setitem__``
-    * ``__getitem__``
+    * ``__setitem__``, ``__getitem__``, ``__delitem__``
+    * ``__contains__``, ``__len__``
+    * ``__iter__``, ``__reversed__``
     * ``__str__``
+    * ``update``
     """
     def __init__(self):
         self._ratings = collections.OrderedDict()
@@ -124,14 +126,14 @@ class RatedDict(object):
     def __contains__(self, key):
         return self._dict.__contains__(key)
 
+    def __len__(self):
+        return self._dict.__len__()
+
     def __iter__(self):
         return self._ratings.__iter__()
 
     def __reversed__(self):
         return self._ratings.__reversed__()
-
-    def __len__(self):
-        return self._dict.__len__()
 
     def update(self, other=(), **updated):
         with self.locked:
@@ -222,9 +224,17 @@ class RatedDict(object):
                 error = '{}.highest_rated: empty container'
                 raise ValueError(error.format(self))
 
+    @property
+    def ratings(self):
+        """``key``-``rate`` pairs for each ``key``, sorted by ``rate``.
+
+        :rtype:                         iterator
+        """
+        return iter(self._ratings.items())
+
 
 class MultiPlugAdapter(RatedDict):
-    """The multi-plug adapter that holds the implementations.
+    """The multi-plug adapter that holds all the plugin implementations.
 
     :param name:                        The name of the plug adapter (i.e. the
                                         name of the entry point).
@@ -261,14 +271,19 @@ class MultiPlugAdapter(RatedDict):
 
 
 class Multipla(RatedDict):
-    """The power strip to put the plugs into.
+    """The power strip to put yout plugs into.
 
     :param name:                        The name of the power strip (i.e. the
                                         entry point group).
 
-    This class represents the plugin group. Since this class inherit from
-    :py:class:`RatedDict`, it's possible to rate each plugin. For example, you
-    could rate a set of content type handler.
+    This class represents the plugin group. Since this class inherits from
+    :py:class:`RatedDict`, it's possible to use it almost as a dictionary, and
+    also rate your plugin names. Each item in an instance of this class is an
+    instance of :py:class:`MultiPlugAdapter`, actually, so you can use more
+    implementation of a given plugin name. On the average you want to use the
+    higest rated implementation trough the :py:meth:`Multipla.get` method, but
+    you can also use the dictionary item access syntax to reach for all the
+    implementations a achieve your goal.
     """
 
     def __init__(self, name):
@@ -288,8 +303,8 @@ class Multipla(RatedDict):
                                         associated with the ``name``.
 
         If the specified :py:class:`MultiPlugAdapter` already exists, it is
-        returned.  If there is no :py:class:`MultiPlugAdapter` for the
-        specified plugin group, a new one is created and returned.
+        returned. If there is no :py:class:`MultiPlugAdapter` for the
+        specified plugin name, a new one is created and returned.
         """
         with self.locked:
             try:
@@ -305,6 +320,7 @@ class Multipla(RatedDict):
         :param default:                 The default value to return if lookup
                                         fails.
         :returns:                       The highest rated plugin.
+        :raises KeyError:               If ``name`` lookup fails.
         :raises ValueError:             See :py:data:`RatedDict.highest_rated`.
         """
         try:
@@ -326,11 +342,18 @@ def power_up(name, *args):
                                         :py:class:`pkg_resources.WorkingSet`.
     :rtype:                             :py:class:`Multipla`
 
-    :py:class:`Multipla` instance meant to be unique, is powered up by
-    subscribing (as per :py:meth:`pkg_resources.WorkingSet.subscribe`) it to
-    each :py:class:`pkg_resources.WorkingSet` in the variable argument list. If
-    no extra argument is provided, :py:data:`pkg_resources.working_set` is
-    used.
+    I meant to have just one :py:class:`Multipla` instances for each group of
+    entry points. They are powered up by subscribing (as per
+    :py:meth:`pkg_resources.WorkingSet.subscribe`) to each
+    :py:class:`pkg_resources.WorkingSet` in the variable argument list. If no
+    extra argument is provided, (default) :py:data:`pkg_resources.working_set`
+    is used. Subscription causes the :py:class:`Multipla` instance to register
+    any plugin in the given :py:class:`pkg_resources.WorkingSet`, and let it be
+    notified of any plugin that will be added in the future. Subscribing a
+    :py:class:`Multipla` twice (or more) to the same
+    :py:class:`pkg_resources.WorkingSet` neither add any overhead, nor makes
+    the instance to register a give plugin more than once, so it's safer to use
+    this function as the only module interface.
 
     >>> import multipla
     >>>
