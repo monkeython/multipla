@@ -22,6 +22,7 @@ EGG = {
     'description': DESCRIPTION,
     'long_description': LONG_DESCRIPTION,
     'classifiers': PACKAGE.__classifiers__,
+    'license': 'BSD',
     'keywords': PACKAGE.__keywords__,
     'py_modules': [NAME],
     'tests_require': ['genty'],
