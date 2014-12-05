@@ -29,7 +29,7 @@
 #     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 __author__ = "Luca De Vitis <luca at monkeython.com>"
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 __keywords__ = ['multipla', 'multi-plugs', 'multi-socket', 'plugs', 'plugin']
 __classifiers__ = [
     'Development Status :: 5 - Production/Stable',

@@ -18,7 +18,7 @@ deploy:
   provider: pypi
   user: monkeython
   password:
-    secure: el+nlWhEjos4ofYJJf+FrU4H9o28bzLzsu3wW+xx8mPZHE/vY33WEniLSqI7wION+KlRXCVASa1XF25rKFp2TIybB8FlpyUZdz2gprUbX9tGy6uxjLnWS9BnkSqu3EfQRfN0p9pCwGXhJPNXYI9A8kZnaxKtNhZnkLnxjrSUaV8=
+    secure: "MiD/uXfVdKqWWFmqWWG7B4uyY/3tNPmMVGBNO7lreEZhzpAX16X0tOv6B4Sh/UsctaxDROs+O9fl+78vElErH03B2tSvtbwDDH/6T8jMUeMv0pxwjkrt8z0BskM4mEIukkxDn3E8tDBZYhuoLXFrr99TVUsOajwWsf00vOJMqSg="
   on:
     tags: true
     all_branches: true

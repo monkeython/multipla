@@ -1,15 +1,15 @@
 
-.. image:: https://travis-ci.org/monkeython/multipla.svg?branch=master
+.. image:: https://travis-ci.org/monkeython/multipla.svg?branch=v0.2.0
     :target: https://travis-ci.org/monkeython/multipla
     :alt: Build status
 
-.. image:: https://coveralls.io/repos/monkeython/multipla/badge.png?branch=master
+.. image:: https://coveralls.io/repos/monkeython/multipla/badge.png?branch=v0.2.0
     :target: https://coveralls.io/r/monkeython/multipla?branch=master
     :alt: Test coverage
 
-.. image:: https://readthedocs.org/projects/multipla/badge/?version=latest&style=default
+.. image:: https://readthedocs.org/projects/multipla/badge/?version=v0.2.0&style=default
     :target: http://multipla.readthedocs.org/en/latest/
-    :alt: Documentation status
+    :alt: Read the Docs
 
 .. image:: https://pypip.in/download/multipla/badge.svg?period=month
     :target: https://pypi.python.org/pypi/multipla/
