@@ -1,2 +1,2 @@
-recursive-include tests *.py
+include test_multipla.py
 include *.rst
