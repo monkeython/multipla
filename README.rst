@@ -63,9 +63,6 @@ use for you and third party developers? I don't know, but I know what I like:
        content_type = content_types.get('application/json')
        return content_type.format(ojbect)
 
-   def to_tar(objects):
-       return content_types.get('application_x_tar').format(objects)
-
    def to_user_supplied_type(object, content_type):
        return content_types.get(content_type).format(object)
 
