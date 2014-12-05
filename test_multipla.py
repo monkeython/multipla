@@ -1,3 +1,4 @@
+import time
 import unittest
 
 import multipla
@@ -19,11 +20,15 @@ class NoIteritems(object):
 
 class Testlock(unittest.TestCase):
 
-    def test_Lock(self):
-        lock = multipla.Lock()
-        with lock:
-            self.assertTrue(lock)
-        self.assertFalse(lock)
+    def setUp(self):
+        self.locked = multipla.Lock()
+
+    def test_with(self):
+        self.assertFalse(self.locked)
+        with self.locked:
+            self.assertTrue(self.locked)
+        self.assertFalse(self.locked)
+
 
 
 @genty.genty
@@ -61,8 +66,8 @@ class TestRatedDict(unittest.TestCase):
         (NoIteritems({'k': 11, 'l': 12}, m=13), {'n': 14, 'o': 15}))
     def test_update_values(self, values, kwargs):
         self.rd.update(values, **kwargs)
-        self.assertItemsEqual(list(self.rd._dict.keys()),
-                              list(self.rd._ratings.keys()))
+        self.assertEqual(sorted(list(self.rd._dict.keys())),
+                         sorted(list(self.rd._ratings.keys())))
         for key in self.rd._dict:
             self.assertEqual(self.rd._ratings[key], 0)
 
@@ -76,9 +81,11 @@ class TestRatedDict(unittest.TestCase):
 
     def test_rate(self):
         self.rd.update(a=1, b=2, c=3)
-        self.assertItemsEqual(self.rd._ratings.values(), [0, 0, 0])
+        self.assertEqual([self.rd._ratings[k] for k in self.rd._ratings],
+                         [0, 0, 0])
         self.rd.rate(a=2, b=3, c=4)
-        self.assertItemsEqual(self.rd._ratings.values(), [2, 3, 4])
+        self.assertEqual([self.rd._ratings[k] for k in self.rd._ratings],
+                         [4, 3, 2])
         self.assertEqual(list(self.rd._ratings.keys()), ['c', 'b', 'a'])
         with self.assertRaises(KeyError):
             self.rd.rate(d=1)

@@ -2,7 +2,7 @@
 """
 
 __author__ = "Luca De Vitis <luca at monkeython.com>"
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 __copyright__ = "2014, %s " % __author__
 __docformat__ = 'restructuredtext en'
 __keywords__ = ['multipla', 'multi-plugs', 'multi-socket', 'plugs', 'plugin']
@@ -47,6 +47,8 @@ class Lock(object):
 
     def __nonzero__(self):
         return self.__lock.locked()
+
+    __bool__ = __nonzero__
 
     def __enter__(self):
         self.__lock.acquire()
@@ -190,7 +192,7 @@ class RatedDict(object):
         """
         with self.locked:
             try:
-                return self._dict[self._ratings.__iter__().next()]
+                return self._dict[next(iter(self._ratings))]
             except StopIteration:
                 error = '{}.highest_rated: empty container'
                 raise ValueError(error.format(self))
