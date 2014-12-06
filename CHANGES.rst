@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.3.2
+   * Python 3 compatibility fixes
+0.3.1
+   * Documentation fix.
 0.3.0
    * Modified behaviour of ``RatedDict.ratings`` in favour of a more dict like
      interface.

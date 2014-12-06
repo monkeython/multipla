@@ -1,5 +1,5 @@
 """
-This module provide some plugin handling facilities built on top of
+This module provides plugin handling facilityes, built on top of
 :py:mod:`pkg_resources`.
 """
 #     Copyright (c) 2014, Luca De Vitis <luca at monkeython.com>
@@ -33,7 +33,7 @@ This module provide some plugin handling facilities built on top of
 #     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 __author__ = "Luca De Vitis <luca at monkeython.com>"
-__version__ = '0.3.0'
+__version__ = '0.3.2'
 __keywords__ = ['multipla', 'multi-plugs', 'multi-socket', 'plugs', 'plugin']
 __classifiers__ = [
     'Development Status :: 5 - Production/Stable',
@@ -52,6 +52,7 @@ __classifiers__ = [
 __all__ = ['power_up']
 
 import collections
+import functools
 import importlib
 import sys
 
@@ -74,14 +75,80 @@ iteritems = lambda o: iter(o.iteritems() if PY2 else o.items())
 iterkeys = lambda o: iter(o.iterkeys() if PY2 else o.keys())
 
 
+def _public2(method):
+    @functools.wraps(method)
+    def wrapper(*args, **kwargs):
+        return method(*args, **kwargs)
+    wrapper.__name__ = method.__name__.lstrip('_')
+    return wrapper
+
+
+def _list_iterator(method):
+    @functools.wraps(method)
+    def wrapper(*args, **kwargs):
+        return list(method(*args, **kwargs))
+    wrapper.__name__ = method.__name__[6:]
+    return wrapper
+
+
+def _public3(method):
+    @functools.wraps(method)
+    def wrapper(*args, **kwargs):
+        return method(*args, **kwargs)
+    wrapper.__name__ = method.__name__[6:]
+    return wrapper
+
+
+def _iterkeys(instance):
+    "Returns a generator of its own keys, sorted by rating."
+    return (k for k in instance._ratings)
+
+
+def _itervalues(instance):
+    "Returns a generator of its own values, sorted by rating."
+    return (instance._dict[k] for k in instance._ratings)
+
+
+def _iteritems(instance):
+    "Returns a generator of ``(key, value)`` pairs, sorted by rating."
+    return ((k, instance._dict[k]) for k in instance._ratings)
+
+
+def _iterratings(instance):
+    "Returns a generator of ``(key, rating)`` pairs, sorted by rating."
+    return (r for r in instance._ratings.items())
+
+
+def _viewkeys(instance):
+    "Returns a :py:class:`collections.KeysView` of its own keys."
+    return collections.KeysView(instance._dict)
+
+
+def _viewvalues(instance):
+    "Returns a :py:class:`collections.ValuesView` of its own values."
+    return collections.ValuesView(instance._dict)
+
+
+def _viewitems(instance):
+    "Returns a :py:class:`collections.ItemsView` of its own items."
+    return collections.ItemsView(instance._dict)
+
+
+def _viewratings(instance):
+    "Returns a :py:class:`collections.ItemsView` of its own ratings."
+    return collections.ItemsView(instance._ratings)
+
+
 class Lock(object):
     def __init__(self):
         self.__lock = thread.allocate_lock()
 
-    def __nonzero__(self):
-        return self.__lock.locked()
-
-    __bool__ = __nonzero__
+    if PY2:
+        def __nonzero__(self):
+            return self.__lock.locked()
+    else:
+        def __bool__(self):
+            return self.__lock.locked()
 
     def __enter__(self):
         self.__lock.acquire()
@@ -91,7 +158,7 @@ class Lock(object):
 
 
 class RatedDict(collections.Mapping):
-    """A :py:class:`dict`-like class that lets you to rate its objects.
+    """A :py:class:`dict`-like class that lets you rate its objects.
 
     This implementation is meant to be thread-safe. It supports
     the following :py:class:`dict`-like methods as you would expect:
@@ -161,25 +228,25 @@ class RatedDict(collections.Mapping):
             for key in updated:
                 self._setitem_(key, updated[key])
 
-    def rate(self, updates=(), **args):
+    def rate(self, ratings=None, **args):
         """Rate the items into the dictionary.
 
-        :param updates:                 A ``key: rating`` dictionary or an
+        :param ratings:                 A ``key: rating`` mapping or an
                                         iterable yielding ``(key, rating)``.
         :param args:                    Anyway, variable keyword arguments
                                         ``args`` will be used to update the
                                         item ratings.
         :raises KeyError:               If unexpected keys are found.
 
-        This method behave like the :py:meth:`dict.update`, but affects only
+        This method behaves like the :py:meth:`dict.update`, but affects only
         items ratings. At the end of the update, dictionary keys are sorted by
         rating, from greater to lower rating value. Rating is supposed to be
         any kind of number equal or greater than 0. Default item rating is 0.
         """
 
-        ratings = dict(updates, **args)
+        ratings = dict(ratings if ratings is not None else (), **args)
         with self.locked:
-            unexpected = ratings.viewkeys() - self._dict.viewkeys()
+            unexpected = set(ratings.keys()) - set(self._dict.keys())
             if unexpected:
                 error = '{}.rate: unexpected keys {}'
                 raise KeyError(error.format(self, unexpected))
@@ -195,7 +262,7 @@ class RatedDict(collections.Mapping):
 
         :param int amount:              The number of items to return. Defaults
                                         to all items.
-        :returns:                       A list of ``key``-``value`` pairs,
+        :returns:                       A list of ``(key, value)`` pairs,
                                         sorted by key ratings.
         :raises ValueError:             If ``amount`` is greater than the
                                         available items.
@@ -234,37 +301,24 @@ class RatedDict(collections.Mapping):
         """
         return self._ratings[key]
 
-    def keys(self):
-        "Returns a generator of its own keys, sorted by rating."
-        return (k for k in self._ratings)
-
-    def values(self):
-        "Returns a generator of its own values, sorted by rating."
-        return (self._dict[k] for k in self._ratings)
-
-    def items(self):
-        "Returns a generator of all ``(key, value)`` pairs, sorted by rating."
-        return ((k, self._dict[k]) for k in self._ratings)
-
-    def ratings(self):
-        "Returns a generator of all ``(key, rating)`` pairs, sorted by rating."
-        return (r for r in self._ratings.items())
-
-    def viewkeys(self):
-        "Returns a :py:class:`collections.KeysView` of its own keys."
-        return collections.KeysView(self._dict)
-
-    def viewvalues(self):
-        "Returns a :py:class:`collections.ValuesView` of its own values."
-        return collections.ValuesView(self._dict)
-
-    def viewitems(self):
-        "Returns a :py:class:`collections.ItemsView` of its own items."
-        return collections.ItemsView(self._dict)
-
-    def viewratings(self):
-        "Returns a :py:class:`collections.ItemsView` of its own ratings."
-        return collections.ItemsView(self._ratings)
+    if PY2:
+        iterkeys = _public2(_iterkeys)
+        itervalues = _public2(_itervalues)
+        iteritems = _public2(_iteritems)
+        iterratings = _public2(_iterratings)
+        viewkeys = _public2(_viewkeys)
+        viewvalues = _public2(_viewvalues)
+        viewitems = _public2(_viewitems)
+        viewratings = _public2(_viewratings)
+        keys = _list_iterator(_iterkeys)
+        values = _list_iterator(_itervalues)
+        items = _list_iterator(_iteritems)
+        ratings = _list_iterator(_iterratings)
+    else:
+        keys = _public3(_viewkeys)
+        values = _public3(_viewvalues)
+        items = _public3(_viewitems)
+        ratings = _public3(_viewratings)
 
 
 class MultiPlugAdapter(RatedDict):
