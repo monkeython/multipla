@@ -23,4 +23,4 @@ deploy:
     tags: true
     all_branches: true
     repo: monkeython/multipla
-    distribution: "sdist bdist_wheel"
+    distributions: "sdist bdist_wheel"
