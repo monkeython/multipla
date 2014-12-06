@@ -1,5 +1,6 @@
 """
-This module provide some plugin handling facilities built on top of :py:mod:`pkg_resources`.
+This module provide some plugin handling facilities built on top of
+:py:mod:`pkg_resources`.
 """
 #     Copyright (c) 2014, Luca De Vitis <luca at monkeython.com>
 #     All rights reserved.
@@ -71,6 +72,7 @@ PY2 = sys.version_info[0] == 2
 
 iteritems = lambda o: iter(o.iteritems() if PY2 else o.items())
 iterkeys = lambda o: iter(o.iterkeys() if PY2 else o.keys())
+
 
 class Lock(object):
     def __init__(self):
