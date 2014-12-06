@@ -11,7 +11,7 @@ script:
   - python setup.py sdist
   - python setup.py bdist_wheel
   - flake8 multipla.py
-  - coverage run test_multipla.py -v
+  - coverage run -a test_multipla.py -v
 after_success:
   - coveralls
 deploy:
