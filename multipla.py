@@ -1,3 +1,6 @@
+"""
+This module provide some plugin handling facilities built on top of :py:mod:`pkg_resources`.
+"""
 #     Copyright (c) 2014, Luca De Vitis <luca at monkeython.com>
 #     All rights reserved.
 
@@ -29,7 +32,7 @@
 #     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 __author__ = "Luca De Vitis <luca at monkeython.com>"
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 __keywords__ = ['multipla', 'multi-plugs', 'multi-socket', 'plugs', 'plugin']
 __classifiers__ = [
     'Development Status :: 5 - Production/Stable',
@@ -49,6 +52,7 @@ __all__ = ['power_up']
 
 import collections
 import importlib
+import sys
 
 import pkg_resources
 
@@ -63,6 +67,10 @@ except ImportError:     # pragma: no cover
         except ImportError:
             thread = importlib.import_module('_dummy_thread')
 
+PY2 = sys.version_info[0] == 2
+
+iteritems = lambda o: iter(o.iteritems() if PY2 else o.items())
+iterkeys = lambda o: iter(o.iterkeys() if PY2 else o.keys())
 
 class Lock(object):
     def __init__(self):
@@ -80,16 +88,17 @@ class Lock(object):
         self.__lock.release()
 
 
-class RatedDict(object):
+class RatedDict(collections.Mapping):
     """A :py:class:`dict`-like class that lets you to rate its objects.
 
-    This implementation is meant to be thread-safe. Actually, it only supports
-    the following :py:class:`dict`-like methods:
+    This implementation is meant to be thread-safe. It supports
+    the following :py:class:`dict`-like methods as you would expect:
 
     * ``__setitem__``, ``__getitem__``, ``__delitem__``
     * ``__contains__``, ``__len__``
     * ``__iter__``, ``__reversed__``
     * ``__str__``
+    * ``__eq__``, ``__ne__``
     * ``update``
     """
     def __init__(self):
@@ -133,35 +142,29 @@ class RatedDict(object):
     def __reversed__(self):
         return self._ratings.__reversed__()
 
-    def update(self, other=(), **updated):
+    def update(self, other=None, **updated):
+
         with self.locked:
-            try:
-                for key, value in other.items():
-                    self._setitem_(key, value)
-            except AttributeError:
+            if other is not None:
                 try:
-                    for key in other.keys():
-                        self._setitem_(key, other[key])
-                except AttributeError:
-                    for key, value in other:
+                    for key, value in iteritems(other):
                         self._setitem_(key, value)
+                except AttributeError:
+                    try:
+                        for key in iterkeys(other):
+                            self._setitem_(key, other[key])
+                    except AttributeError:
+                        for key, value in other:
+                            self._setitem_(key, value)
             for key in updated:
                 self._setitem_(key, updated[key])
-
-#     def setdefault(self, key, value):
-#         with self.locked:
-#             try:
-#                 default = self._dict[key]
-#             except KeyError:
-#                 default = self._setitem_(key, value)
-#         return default
 
     def rate(self, updates=(), **args):
         """Rate the items into the dictionary.
 
         :param updates:                 A ``key: rating`` dictionary or an
                                         iterable yielding ``(key, rating)``.
-        :param dict args:               Anyway, variable keyword arguments
+        :param args:                    Anyway, variable keyword arguments
                                         ``args`` will be used to update the
                                         item ratings.
         :raises KeyError:               If unexpected keys are found.
@@ -174,7 +177,7 @@ class RatedDict(object):
 
         ratings = dict(updates, **args)
         with self.locked:
-            unexpected = set(ratings.keys()) - set(self._dict.keys())
+            unexpected = ratings.viewkeys() - self._dict.viewkeys()
             if unexpected:
                 error = '{}.rate: unexpected keys {}'
                 raise KeyError(error.format(self, unexpected))
@@ -222,10 +225,44 @@ class RatedDict(object):
                 error = '{}.highest_rated: empty container'
                 raise ValueError(error.format(self))
 
-    @property
+    def rating(self, key):
+        """Returns the rating of ``key``.
+
+        :raises KeyError:               If ``key`` does not exists.
+        """
+        return self._ratings[key]
+
+    def keys(self):
+        "Returns a generator of its own keys, sorted by rating."
+        return (k for k in self._ratings)
+
+    def values(self):
+        "Returns a generator of its own values, sorted by rating."
+        return (self._dict[k] for k in self._ratings)
+
+    def items(self):
+        "Returns a generator of all ``(key, value)`` pairs, sorted by rating."
+        return ((k, self._dict[k]) for k in self._ratings)
+
     def ratings(self):
-        """Iterator over ``key``-``rate`` pairs, sorted by ``rate``."""
-        return tuple(self._ratings.items())
+        "Returns a generator of all ``(key, rating)`` pairs, sorted by rating."
+        return (r for r in self._ratings.items())
+
+    def viewkeys(self):
+        "Returns a :py:class:`collections.KeysView` of its own keys."
+        return collections.KeysView(self._dict)
+
+    def viewvalues(self):
+        "Returns a :py:class:`collections.ValuesView` of its own values."
+        return collections.ValuesView(self._dict)
+
+    def viewitems(self):
+        "Returns a :py:class:`collections.ItemsView` of its own items."
+        return collections.ItemsView(self._dict)
+
+    def viewratings(self):
+        "Returns a :py:class:`collections.ItemsView` of its own ratings."
+        return collections.ItemsView(self._ratings)
 
 
 class MultiPlugAdapter(RatedDict):

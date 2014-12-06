@@ -1,6 +1,17 @@
 Changes
 =======
 
+0.3.0
+   * Modified behaviour of ``RatedDict.ratings`` in favour of a more dict like
+     interface.
+   * Added more methods to ``RatedDict``:
+      - keys
+      - values
+      - items
+      - viewkeys
+      - viewvalues
+      - viewitems
+      - viewratings
 0.2.0
    * More documentation.
 0.1.0

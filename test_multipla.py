@@ -1,4 +1,5 @@
-import time
+import sys
+import types
 import unittest
 
 import multipla
@@ -14,8 +15,13 @@ class NoIteritems(object):
     def __getitem__(self, key):
         return self._dict[key]
 
+    def iterkeys(self):
+        return iter(self._dict)
+
     def keys(self):
-        return self._dict.keys()
+        if sys.version_info[0] == 2:
+            return list(self.keys())
+        return self.iterkeys()
 
 
 class Testlock(unittest.TestCase):
@@ -29,6 +35,8 @@ class Testlock(unittest.TestCase):
             self.assertTrue(self.locked)
         self.assertFalse(self.locked)
 
+
+RatedView = (multipla.collections.MappingView, multipla.collections.Set)
 
 
 @genty.genty
@@ -73,7 +81,7 @@ class TestRatedDict(unittest.TestCase):
 
     def test_update(self):
         with self.assertRaises(TypeError):
-            self.rd.update(None)
+            self.rd.update(int())
         for update in (tuple(), list(), dict(), set(), frozenset()):
             self.rd.update(update)
             self.assertFalse(self.rd._dict)
@@ -106,11 +114,33 @@ class TestRatedDict(unittest.TestCase):
         self.rd.rate(a=16)
         self.assertEqual(self.rd.highest_rated, 1)
 
-    def test_ratings(self):
-        self.assertFalse(self.rd.ratings)
-        self.rd.update(a=1, b=2)
-        self.rd.rate(b=4, a=1)
-        self.assertEqual(list(self.rd.ratings), [('b', 4), ('a', 1)])
+    def test_rating(self):
+        with self.assertRaises(KeyError):
+            self.rd.rating('test')
+        self.rd['test'] = 10
+        self.rd.rate(test=1)
+        self.assertEqual(self.rd.rating('test'), 1)
+
+        
+    @genty.genty_dataset(
+        ('keys', ('b', 'c', 'a')),
+        ('values', (1, 4, 2)),
+        ('items', (('b', 1), ('c', 4), ('a', 2))),
+        ('ratings', (('b', 4), ('c', 2), ('a', 1))))
+    def test_iterviews(self, name, returns):
+        iterator = getattr(self.rd, name)
+        viewer = getattr(self.rd, 'view' + name)
+        self.assertFalse(list(iterator()))
+        self.assertFalse(viewer())
+        self.assertIsInstance(iterator(), types.GeneratorType)
+        self.assertIsInstance(viewer(), RatedView)
+        self.rd.update(a=2, b=1, c=4)
+        self.rd.rate(b=4, a=1, c=2)
+        self.assertEqual(list(iterator()), list(returns))
+        self.assertEqual(set(viewer()), set(returns))
+        self.assertIsInstance(iterator(), types.GeneratorType)
+        self.assertIsInstance(viewer(), RatedView)
+
 
 class TestMultiPlugAdapter(unittest.TestCase):
 
