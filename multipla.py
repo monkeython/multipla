@@ -1,6 +1,17 @@
 """
-This module provides plugin handling facilityes, built on top of
-:py:mod:`pkg_resources`.
+A ``multipla`` (which is spelled like ``Multi-plug``) is one of the italian
+words for a power strip. As you probably know, most kind of ``multipla`` have
+(multiple) sockets capable of handling mulitiple types of plugs. I thought it
+would have been a perfect name for a module that helps developer to write and
+use extensible python distributions.
+
+So, this module provides just one simple interface: the function
+:py:func:`power_up`. It returns an instance of a plugin handling class
+(:py:class:`Multipla`), that uses :py:mod:`pkg_resources` to add all entry
+points from the abailable distributions. A :py:class:`Multipla` is a
+:py:class:`RatedDict` of :py:class:`MultiPlugAdapter`s, which also are
+:py:class:`RatedDict`s. So, thanks to a simple rating system, you'll be able to
+handle multiple implementation of multiple plugins trough just a single class.
 """
 #     Copyright (c) 2014, Luca De Vitis <luca at monkeython.com>
 #     All rights reserved.
@@ -33,7 +44,7 @@ This module provides plugin handling facilityes, built on top of
 #     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 __author__ = "Luca De Vitis <luca at monkeython.com>"
-__version__ = '0.3.2'
+__version__ = '0.3.3'
 __keywords__ = ['multipla', 'multi-plugs', 'multi-socket', 'plugs', 'plugin']
 __classifiers__ = [
     'Development Status :: 5 - Production/Stable',

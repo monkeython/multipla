@@ -16,6 +16,7 @@ after_success:
   - coveralls
 deploy:
   provider: pypi
+  distributions: "sdist bdist_wheel"
   user: monkeython
   password:
     secure: "MiD/uXfVdKqWWFmqWWG7B4uyY/3tNPmMVGBNO7lreEZhzpAX16X0tOv6B4Sh/UsctaxDROs+O9fl+78vElErH03B2tSvtbwDDH/6T8jMUeMv0pxwjkrt8z0BskM4mEIukkxDn3E8tDBZYhuoLXFrr99TVUsOajwWsf00vOJMqSg="
@@ -23,4 +24,3 @@ deploy:
     tags: true
     all_branches: true
     repo: monkeython/multipla
-    distributions: "sdist bdist_wheel"
