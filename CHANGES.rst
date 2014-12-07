@@ -1,6 +1,8 @@
 Changes
 =======
 
+0.3.3
+   * A bit more documentation and Travis auto-deply fixes.
 0.3.2
    * Python 3 compatibility fixes
 0.3.1
